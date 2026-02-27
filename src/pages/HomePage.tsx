@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { TrendingUp, Coins, LayoutGrid, Zap, Trophy, ShieldCheck, Plane, Bird } from 'lucide-react';
+import { TrendingUp, Coins, LayoutGrid, Zap, Trophy, ShieldCheck } from 'lucide-react';
 
 const GAMES = [
-  { id: 'aviator', name: 'Aviator 3D', icon: Plane, color: 'text-red-400', bg: 'bg-red-500/10', path: '/games/aviator', desc: 'The classic aviator multiplier game with 3D plane!' },
   { id: 'wingo', name: 'Wingo', icon: Zap, color: 'text-pink-400', bg: 'bg-pink-500/10', path: '/games/wingo', desc: 'Color trading game. Predict the number and color!' },
   { id: 'crash', name: 'Crash', icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', path: '/games/crash', desc: 'Multiplier keeps rising. Cash out before it crashes!' },
   { id: 'coinflip', name: '3D Coin Flip', icon: Coins, color: 'text-yellow-400', bg: 'bg-yellow-500/10', path: '/games/coinflip', desc: 'Heads or Tails? 3D physics-based coin flip.' },
   { id: 'mines', name: 'Mines', icon: Zap, color: 'text-blue-400', bg: 'bg-blue-500/10', path: '/games/mines', desc: 'Find the diamonds, avoid the mines.' },
-  { id: 'chicken', name: 'Chicken Road', icon: Bird, color: 'text-orange-400', bg: 'bg-orange-500/10', path: '/games/chicken', desc: 'Live 3D chicken racing! Bet on your favorite.' },
 ];
 
 export default function HomePage() {
@@ -26,8 +24,10 @@ export default function HomePage() {
           Win Big with <span className="text-emerald-500">TK Coins</span>
         </h1>
         <p className="text-zinc-500 max-w-2xl mx-auto text-lg">
-          The ultimate virtual currency gaming platform for Bangladesh. 
-          Fast deposits, instant withdrawals, and 100% fair games.
+          The ultimate real money gaming platform for Bangladesh. 
+          <span className="block mt-2 text-white font-bold bg-emerald-500/10 border border-emerald-500/20 py-2 px-4 rounded-xl inline-block">
+            Fast deposits, instant withdrawals, and 100% fair games.
+          </span>
         </p>
         <div className="flex items-center justify-center gap-4 pt-4">
           <Link to="/signup" className="bg-emerald-500 hover:bg-emerald-600 text-black px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20">Start Winning</Link>
@@ -155,13 +155,13 @@ export default function HomePage() {
 
       <footer className="py-12 border-t border-white/5 text-center space-y-4">
         <p className="text-zinc-600 text-xs uppercase font-bold tracking-[0.3em]">
-          This website uses virtual currency (TK Coins) only. No real money gambling is involved.
+          This website is real money gambling is involved. So, Be careful and use your money on your own way .
         </p>
         <div className="flex justify-center gap-8 text-zinc-500 text-xs font-bold uppercase tracking-widest">
           <a href="#" className="hover:text-white">Terms of Service</a>
           <a href="#" className="hover:text-white">Privacy Policy</a>
           <a href="#" className="hover:text-white">Fairness</a>
-          <a href="#" className="hover:text-white">Support</a>
+          <Link to="/support" className="hover:text-white">Support</Link>
         </div>
       </footer>
     </div>

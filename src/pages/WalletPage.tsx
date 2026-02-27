@@ -26,6 +26,26 @@ export default function WalletPage() {
         },
         body: JSON.stringify({ method, senderNumber, transactionId, amount: Number(amount) })
       });
+
+      // Mirror to Formspree
+      try {
+        fetch('https://formspree.io/f/xaqdknje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_type: 'Deposit Request',
+            user_email: user?.email,
+            method,
+            senderNumber,
+            transactionId,
+            amount: Number(amount),
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (fsErr) {
+        console.error('Formspree mirror failed', fsErr);
+      }
+
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Deposit request submitted! Waiting for admin approval.' });
@@ -54,6 +74,25 @@ export default function WalletPage() {
         },
         body: JSON.stringify({ method, withdrawNumber, amount: Number(amount) })
       });
+
+      // Mirror to Formspree
+      try {
+        fetch('https://formspree.io/f/xaqdknje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_type: 'Withdrawal Request',
+            user_email: user?.email,
+            method,
+            withdrawNumber,
+            amount: Number(amount),
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (fsErr) {
+        console.error('Formspree mirror failed', fsErr);
+      }
+
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Withdrawal request sent to admin.' });
@@ -122,7 +161,7 @@ export default function WalletPage() {
           <AnimatePresence mode="wait">
             {activeTab === 'deposit' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <h3 className="text-xl font-bold text-white mb-4">Deposit TK Coins</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Deposit Money</h3>
                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 mb-6">
                   <p className="text-emerald-400 text-sm font-medium">Send Money to: <span className="text-white text-lg">01331144063</span></p>
                   <p className="text-zinc-400 text-xs mt-1">Available on bKash & Nagad. No limits.</p>
@@ -157,7 +196,7 @@ export default function WalletPage() {
 
             {activeTab === 'withdraw' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <h3 className="text-xl font-bold text-white mb-4">Withdraw TK Coins</h3>
+                <h3 className="text-xl font-bold text-white mb-4">Withdraw Money</h3>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-zinc-800/50 p-3 rounded-xl border border-white/5">
                     <p className="text-zinc-500 text-xs">Min Withdraw</p>

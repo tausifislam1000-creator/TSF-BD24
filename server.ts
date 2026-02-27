@@ -145,11 +145,6 @@ app.post("/api/auth/signup", async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  if (!passwordRegex.test(password)) {
-    return res.status(400).json({ error: "Password does not meet security requirements" });
-  }
-
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const info = db.prepare("INSERT INTO users (email, username, full_name, phone, password) VALUES (?, ?, ?, ?, ?)").run(email, username, full_name, phone, hashedPassword);
@@ -446,6 +441,15 @@ app.put("/api/admin/tournaments/:id", authenticate, (req: any, res) => {
   const { status, room_id, room_password } = req.body;
   
   db.prepare("UPDATE tournaments SET status = ?, room_id = ?, room_password = ? WHERE id = ?").run(status, room_id, room_password, req.params.id);
+  
+  // Broadcast update to all users
+  io.emit('tournament:update', { 
+    id: req.params.id, 
+    status, 
+    room_id, 
+    room_password 
+  });
+  
   res.json({ message: "Tournament updated" });
 });
 
@@ -483,35 +487,13 @@ let crashState = {
 };
 
 // --- Game Logic (Aviator) ---
-let aviatorState = {
-  multiplier: 1.0,
-  status: 'waiting', // 'waiting', 'running', 'crashed'
-  startTime: 0,
-  history: [] as any[],
-  currentBets: [] as any[],
-  nextCrashPoint: 1.0
-};
+// Removed
 
 // --- Game Logic (Wingo) ---
 let wingoState = {
   timeLeft: 60,
   history: [] as any[],
   currentBets: [] as any[]
-};
-
-// --- Game Logic (Chicken Road) ---
-let chickenState = {
-  status: 'waiting', // 'waiting', 'running', 'finished'
-  timeLeft: 15,
-  history: [] as any[],
-  currentBets: [] as any[],
-  chickens: [
-    { id: 1, name: 'Red Rooster', color: 'red', odds: 2.5 },
-    { id: 2, name: 'Blue Bird', color: 'blue', odds: 3.0 },
-    { id: 3, name: 'Green Clucker', color: 'green', odds: 4.0 },
-    { id: 4, name: 'Yellow Pecker', color: 'yellow', odds: 5.0 },
-  ],
-  winner: null as number | null
 };
 
 function generateCrashPoint() {
@@ -565,50 +547,6 @@ function startCrashRound() {
   }
 }
 
-function startAviatorRound() {
-  aviatorState.status = 'waiting';
-  aviatorState.multiplier = 1.0;
-  aviatorState.currentBets = [];
-  aviatorState.nextCrashPoint = generateCrashPoint();
-  
-  let waitTime = 5000;
-  const waitInterval = setInterval(() => {
-    waitTime -= 100;
-    io.emit('aviator:waiting', { timeLeft: waitTime });
-    if (waitTime <= 0) {
-      clearInterval(waitInterval);
-      startRunning();
-    }
-  }, 100);
-  
-  function startRunning() {
-    aviatorState.status = 'running';
-    aviatorState.startTime = Date.now();
-    io.emit('aviator:start');
-    
-    const tick = setInterval(() => {
-      const elapsed = (Date.now() - aviatorState.startTime) / 1000;
-      aviatorState.multiplier = Math.pow(Math.E, 0.06 * elapsed);
-      
-      if (aviatorState.multiplier >= aviatorState.nextCrashPoint) {
-        aviatorState.multiplier = aviatorState.nextCrashPoint;
-        aviatorState.status = 'crashed';
-        aviatorState.history.unshift(aviatorState.multiplier);
-        if (aviatorState.history.length > 20) aviatorState.history.pop();
-        io.emit('aviator:update', { 
-          multiplier: aviatorState.multiplier, 
-          status: 'crashed',
-          history: aviatorState.history 
-        });
-        clearInterval(tick);
-        setTimeout(startAviatorRound, 3000);
-      } else {
-        io.emit('aviator:update', { multiplier: aviatorState.multiplier, status: 'running' });
-      }
-    }, 100);
-  }
-}
-
 function startWingoTimer() {
   const tick = setInterval(() => {
     wingoState.timeLeft = Number((wingoState.timeLeft - 0.1).toFixed(1));
@@ -636,78 +574,13 @@ function startWingoTimer() {
   }, 100);
 }
 
-function startChickenRound() {
-  setInterval(() => {
-    if (chickenState.status === 'waiting') {
-      chickenState.timeLeft -= 1;
-      if (chickenState.timeLeft <= 0) {
-        chickenState.status = 'running';
-        chickenState.timeLeft = 10; // 10 seconds race
-        
-        // Determine winner based on odds (simple random for now, or weighted)
-        const rand = Math.random();
-        if (rand < 0.4) chickenState.winner = 1;
-        else if (rand < 0.7) chickenState.winner = 2;
-        else if (rand < 0.9) chickenState.winner = 3;
-        else chickenState.winner = 4;
-
-        io.emit('chicken:start', { winner: chickenState.winner, duration: 10 });
-      } else {
-        io.emit('chicken:update', { timeLeft: chickenState.timeLeft, status: chickenState.status });
-      }
-    } else if (chickenState.status === 'running') {
-      chickenState.timeLeft -= 1;
-      if (chickenState.timeLeft <= 0) {
-        chickenState.status = 'finished';
-        chickenState.timeLeft = 5; // 5 seconds show result
-        
-        const result = {
-          id: Date.now(),
-          winner: chickenState.winner,
-          chickens: chickenState.chickens
-        };
-        chickenState.history.unshift(result);
-        if (chickenState.history.length > 10) chickenState.history.pop();
-        
-        io.emit('chicken:result', { result, history: chickenState.history });
-        chickenState.currentBets = [];
-      }
-    } else if (chickenState.status === 'finished') {
-      chickenState.timeLeft -= 1;
-      if (chickenState.timeLeft <= 0) {
-        chickenState.status = 'waiting';
-        chickenState.timeLeft = 15;
-        chickenState.winner = null;
-        io.emit('chicken:waiting', { timeLeft: chickenState.timeLeft });
-      }
-    }
-  }, 1000);
-}
-
 startCrashRound();
-startAviatorRound();
 startWingoTimer();
-startChickenRound();
 
 io.on('connection', (socket) => {
   socket.emit('crash:init', crashState);
-  socket.emit('aviator:init', aviatorState);
   socket.emit('wingo:init', wingoState);
-  socket.emit('chicken:init', chickenState);
   
-  socket.on('chicken:bet', (data) => {
-    const bet = {
-      id: Date.now(),
-      user: `User_***${socket.id.slice(0, 3)}`,
-      amount: data.amount,
-      chickenId: data.chickenId,
-      time: new Date().toLocaleTimeString()
-    };
-    chickenState.currentBets.unshift(bet);
-    if (chickenState.currentBets.length > 20) chickenState.currentBets.pop();
-    io.emit('chicken:bet_update', { bets: chickenState.currentBets });
-  });
-
   socket.on('crash:bet', (data) => {
     const bet = {
       id: Date.now(),
@@ -722,19 +595,6 @@ io.on('connection', (socket) => {
     io.emit('crash:bet_update', { bets: crashState.currentBets });
   });
 
-  socket.on('aviator:bet', (data) => {
-    const bet = {
-      id: Date.now(),
-      user: `User_***${socket.id.slice(0, 3)}`,
-      amount: data.amount,
-      multiplier: data.multiplier || 0,
-      status: 'waiting',
-      time: 'Just now'
-    };
-    aviatorState.currentBets.unshift(bet);
-    if (aviatorState.currentBets.length > 20) aviatorState.currentBets.pop();
-    io.emit('aviator:bet_update', { bets: aviatorState.currentBets });
-  });
   socket.on('wingo:bet', (data) => {
     const bet = {
       id: Date.now(),

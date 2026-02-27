@@ -56,6 +56,25 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ email, username })
       });
+
+      // Mirror to Formspree
+      try {
+        fetch('https://formspree.io/f/xaqdknje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_type: 'Profile Update',
+            old_email: user?.email,
+            new_email: email,
+            old_username: user?.username,
+            new_username: username,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (fsErr) {
+        console.error('Formspree mirror failed', fsErr);
+      }
+
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });

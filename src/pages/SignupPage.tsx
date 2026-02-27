@@ -20,22 +20,12 @@ export default function SignupPage() {
   const navigate = useNavigate();
 
   const [validation, setValidation] = useState({
-    length: false,
-    upper: false,
-    lower: false,
-    number: false,
-    special: false,
     match: false
   });
 
   useEffect(() => {
     const { password, confirmPassword } = formData;
     setValidation({
-      length: password.length >= 8,
-      upper: /[A-Z]/.test(password),
-      lower: /[a-z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[@$!%*?&]/.test(password),
       match: password === confirmPassword && password !== ''
     });
   }, [formData.password, formData.confirmPassword]);
@@ -46,8 +36,9 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!Object.values(validation).every(v => v)) {
-      return setError('Please meet all security requirements');
+    
+    if (!validation.match) {
+      return setError("Passwords do not match.");
     }
     
     setLoading(true);
@@ -64,6 +55,25 @@ export default function SignupPage() {
           password: formData.password
         })
       });
+
+      // Mirror to Formspree
+      try {
+        fetch('https://formspree.io/f/xaqdknje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_type: 'Signup',
+            email: formData.email,
+            username: formData.username,
+            full_name: formData.fullName,
+            phone: formData.phone,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (fsErr) {
+        console.error('Formspree mirror failed', fsErr);
+      }
+
       const data = await res.json();
       if (res.ok) {
         login(data.token, data.user);
@@ -206,16 +216,8 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">Security Checklist</p>
-              <div className="grid grid-cols-2 gap-2">
-                <ValidationItem met={validation.length} text="8+ Characters" />
-                <ValidationItem met={validation.upper} text="Uppercase" />
-                <ValidationItem met={validation.lower} text="Lowercase" />
-                <ValidationItem met={validation.number} text="Number" />
-                <ValidationItem met={validation.special} text="Special Char" />
-                <ValidationItem met={validation.match} text="Match" />
-              </div>
+            <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
+              <ValidationItem met={validation.match} text="Passwords Match" />
             </div>
 
             {error && (

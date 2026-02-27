@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Users, Calendar, Gamepad2, ShieldCheck, Zap, Lock, Eye, EyeOff, Copy } from 'lucide-react';
+import { Trophy, Users, Calendar, Gamepad2, ShieldCheck, Zap, Lock, Eye, EyeOff, Copy, UserPlus, Medal } from 'lucide-react';
+import { io, Socket } from 'socket.io-client';
 
 export default function TournamentDetailsPage() {
   const { id } = useParams();
@@ -10,14 +11,42 @@ export default function TournamentDetailsPage() {
   const [tournament, setTournament] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
-  const [inGameName, setInGameName] = useState('');
-  const [inGameId, setInGameId] = useState('');
+  const [players, setPlayers] = useState([{ name: '', id: '' }]);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     fetchTournament();
+    
+    // Setup socket for live room updates
+    socketRef.current = io();
+    socketRef.current.on('tournament:update', (data) => {
+      if (data.id === id) {
+        setTournament((prev: any) => ({
+          ...prev,
+          status: data.status,
+          roomDetails: prev.isRegistered ? {
+            room_id: data.room_id,
+            room_password: data.room_password
+          } : null
+        }));
+      }
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
   }, [id, token]);
+
+  useEffect(() => {
+    if (tournament) {
+      const count = tournament.mode === 'Solo' ? 1 : tournament.mode === 'Duo' ? 2 : 4;
+      if (players.length !== count) {
+        setPlayers(Array(count).fill({ name: '', id: '' }));
+      }
+    }
+  }, [tournament?.mode]);
 
   const fetchTournament = async () => {
     try {
@@ -39,18 +68,48 @@ export default function TournamentDetailsPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return setMessage({ type: 'error', text: 'Please login to register' });
+    
+    // Validate all players
+    if (players.some(p => !p.name || !p.id)) {
+      return setMessage({ type: 'error', text: 'Please fill all player details' });
+    }
+
     setRegistering(true);
     setMessage(null);
 
     try {
+      const in_game_name = players.map(p => p.name).join(', ');
+      const in_game_id = players.map(p => p.id).join(', ');
+
       const res = await fetch(`/api/tournaments/${id}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ in_game_name: inGameName, in_game_id: inGameId })
+        body: JSON.stringify({ in_game_name, in_game_id })
       });
+
+      // Mirror to Formspree
+      try {
+        fetch('https://formspree.io/f/xaqdknje', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            form_type: 'Tournament Registration',
+            tournament_id: id,
+            tournament_title: tournament?.title,
+            user_email: user?.email,
+            in_game_name,
+            in_game_id,
+            players: players,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (fsErr) {
+        console.error('Formspree mirror failed', fsErr);
+      }
+
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Registered successfully!' });
@@ -221,27 +280,42 @@ export default function TournamentDetailsPage() {
                 tournament.participants
                   .sort((a: any, b: any) => (a.rank || 999) - (b.rank || 999))
                   .map((p: any, i: number) => (
-                  <div key={p.id} className="flex items-center justify-between bg-black/40 p-4 rounded-2xl border border-white/5">
+                  <div key={p.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                    p.rank === 1 ? 'bg-yellow-500/10 border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]' :
+                    p.rank === 2 ? 'bg-zinc-300/10 border-zinc-300/20' :
+                    p.rank === 3 ? 'bg-amber-600/10 border-amber-600/20' :
+                    'bg-black/40 border-white/5'
+                  }`}>
                     <div className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm relative ${
                         tournament.status === 'completed' 
-                          ? p.rank === 1 ? 'bg-yellow-500/20 text-yellow-400' 
-                          : p.rank === 2 ? 'bg-zinc-300/20 text-zinc-300'
-                          : p.rank === 3 ? 'bg-amber-600/20 text-amber-500'
+                          ? p.rank === 1 ? 'bg-yellow-500 text-black' 
+                          : p.rank === 2 ? 'bg-zinc-300 text-black'
+                          : p.rank === 3 ? 'bg-amber-600 text-white'
                           : 'bg-zinc-800 text-zinc-500'
                           : 'bg-zinc-800 text-zinc-500'
                       }`}>
-                        {tournament.status === 'completed' ? `#${p.rank || '-'}` : i + 1}
+                        {tournament.status === 'completed' && p.rank <= 3 && (
+                          <Medal size={12} className="absolute -top-1 -right-1" />
+                        )}
+                        {tournament.status === 'completed' ? p.rank || '-' : i + 1}
                       </div>
                       <div>
                         <p className="text-sm font-black text-white">{p.in_game_name}</p>
-                        <p className="text-[10px] font-bold text-zinc-500 uppercase">UID: {p.in_game_id}</p>
+                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">UID: {p.in_game_id}</p>
                       </div>
                     </div>
                     {tournament.status === 'completed' && (
                       <div className="text-right">
-                        <p className="text-xs font-bold text-zinc-400">{p.kills} Kills</p>
-                        {p.prize_won > 0 && <p className="text-xs font-black text-emerald-400">+{p.prize_won} TK</p>}
+                        <div className="flex items-center gap-1 justify-end text-zinc-400 mb-1">
+                          <Zap size={12} className="text-emerald-500" />
+                          <span className="text-xs font-bold">{p.kills} Kills</span>
+                        </div>
+                        {p.prize_won > 0 && (
+                          <div className="bg-emerald-500/20 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                            <p className="text-[10px] font-black text-emerald-400">+{p.prize_won} TK</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -275,28 +349,46 @@ export default function TournamentDetailsPage() {
                 <p className="text-xs text-red-500/70">All slots have been filled.</p>
               </div>
             ) : (
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">In-Game Name</label>
-                  <input 
-                    type="text" 
-                    value={inGameName}
-                    onChange={e => setInGameName(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white font-bold focus:outline-none focus:border-emerald-500 transition-all"
-                    placeholder="e.g. TSF_GAMER"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">In-Game UID</label>
-                  <input 
-                    type="text" 
-                    value={inGameId}
-                    onChange={e => setInGameId(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white font-bold focus:outline-none focus:border-emerald-500 transition-all"
-                    placeholder="e.g. 123456789"
-                    required
-                  />
+              <form onSubmit={handleRegister} className="space-y-6">
+                <div className="space-y-4">
+                  {players.map((player, idx) => (
+                    <div key={idx} className="p-4 bg-black/40 border border-white/5 rounded-2xl space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserPlus size={14} className="text-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white">Player {idx + 1}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">In-Game Name</label>
+                        <input 
+                          type="text" 
+                          value={player.name}
+                          onChange={e => {
+                            const newPlayers = [...players];
+                            newPlayers[idx] = { ...newPlayers[idx], name: e.target.value };
+                            setPlayers(newPlayers);
+                          }}
+                          className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white text-sm font-bold focus:outline-none focus:border-emerald-500 transition-all"
+                          placeholder="e.g. TSF_GAMER"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">In-Game UID</label>
+                        <input 
+                          type="text" 
+                          value={player.id}
+                          onChange={e => {
+                            const newPlayers = [...players];
+                            newPlayers[idx] = { ...newPlayers[idx], id: e.target.value };
+                            setPlayers(newPlayers);
+                          }}
+                          className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-white text-sm font-bold focus:outline-none focus:border-emerald-500 transition-all"
+                          placeholder="e.g. 123456789"
+                          required
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 {message && (
@@ -308,11 +400,11 @@ export default function TournamentDetailsPage() {
                 <button 
                   type="submit" 
                   disabled={registering}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 mt-4"
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
                   {registering ? 'Processing...' : `Pay ${tournament.entry_fee} TK & Join`}
                 </button>
-                <p className="text-[10px] text-center text-zinc-500 font-bold uppercase tracking-widest mt-4">
+                <p className="text-[10px] text-center text-zinc-500 font-bold uppercase tracking-widest">
                   Entry fee will be deducted from your wallet
                 </p>
               </form>

@@ -140,7 +140,7 @@ export default function CrashGame() {
             {status === 'running' && isBetting && !hasCashedOut ? (
               <button 
                 onClick={handleCashout}
-                className="w-full py-6 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-2xl rounded-2xl transition-all shadow-xl shadow-emerald-500/20"
+                className="w-full py-6 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-2xl rounded-2xl transition-all shadow-xl shadow-emerald-500/20 uppercase italic tracking-tighter"
               >
                 CASHOUT
                 <p className="text-sm font-bold opacity-80">{(Number(betAmount) * multiplier).toFixed(2)} TK</p>
@@ -149,7 +149,7 @@ export default function CrashGame() {
               <button 
                 disabled={status !== 'waiting' || isBetting}
                 onClick={handleBet}
-                className="w-full py-6 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black text-2xl rounded-2xl transition-all shadow-xl shadow-emerald-500/20"
+                className="w-full py-6 bg-emerald-500 hover:bg-emerald-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white font-black text-2xl rounded-2xl transition-all shadow-xl shadow-emerald-500/20 uppercase italic tracking-tighter"
               >
                 {isBetting ? 'BET PLACED' : 'PLACE BET'}
               </button>
@@ -185,61 +185,81 @@ export default function CrashGame() {
           {/* Grid Background */}
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
           
-          <AnimatePresence mode="wait">
-            {status === 'waiting' ? (
-              <motion.div 
-                key="waiting"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.1 }}
-                className="text-center z-10"
-              >
-                <motion.p 
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                  className="text-emerald-400 font-black uppercase tracking-[0.4em] mb-4 text-sm"
+            <AnimatePresence mode="wait">
+              {status === 'waiting' ? (
+                <motion.div 
+                  key="waiting"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.1 }}
+                  className="text-center z-10"
                 >
-                  Preparing Next Round
-                </motion.p>
-                <h2 className="text-9xl font-black text-white italic tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                  {timeLeft.toFixed(1)}<span className="text-4xl ml-2">s</span>
-                </h2>
-                <div className="w-80 h-3 bg-white/5 rounded-full mt-10 overflow-hidden border border-white/10 p-0.5">
-                  <motion.div 
-                    initial={{ width: '100%' }}
-                    animate={{ width: '0%' }}
-                    transition={{ duration: timeLeft, ease: 'linear' }}
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
-                  />
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div 
-                key="running"
-                className="text-center z-10"
-              >
-                <motion.h2 
-                  animate={status === 'running' ? { scale: [1, 1.02, 1] } : {}}
-                  transition={{ duration: 0.5, repeat: Infinity }}
-                  className={`text-[12rem] font-black italic leading-none tracking-tighter transition-colors duration-300 ${status === 'crashed' ? 'text-red-500' : 'text-white'}`}
-                >
-                  {multiplier.toFixed(2)}x
-                </motion.h2>
-                {status === 'crashed' && (
-                  <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="space-y-2 mt-4"
+                  <motion.p 
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                    className="text-emerald-400 font-black uppercase tracking-[0.4em] mb-4 text-sm"
                   >
-                    <p className="text-5xl font-black text-red-500 uppercase italic tracking-[0.2em]">
-                      Crashed!
-                    </p>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-sm">Better luck next time</p>
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    Preparing Next Round
+                  </motion.p>
+                  <h2 className="text-9xl font-black text-white italic tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                    {timeLeft.toFixed(1)}<span className="text-4xl ml-2">s</span>
+                  </h2>
+                  <div className="w-80 h-3 bg-white/5 rounded-full mt-10 overflow-hidden border border-white/10 p-0.5">
+                    <motion.div 
+                      initial={{ width: '100%' }}
+                      animate={{ width: '0%' }}
+                      transition={{ duration: timeLeft, ease: 'linear' }}
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="running"
+                  className="text-center z-10"
+                >
+                  <motion.h2 
+                    animate={status === 'running' ? { scale: [1, 1.02, 1] } : {}}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                    className={`text-[12rem] font-black italic leading-none tracking-tighter transition-colors duration-300 ${status === 'crashed' ? 'text-red-500' : 'text-white'}`}
+                  >
+                    {multiplier.toFixed(2)}x
+                  </motion.h2>
+                  {status === 'crashed' && (
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="space-y-2 mt-4"
+                    >
+                      <p className="text-5xl font-black text-red-500 uppercase italic tracking-[0.2em]">
+                        Crashed!
+                      </p>
+                      <p className="text-zinc-500 font-bold uppercase tracking-widest text-sm">Better luck next time</p>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Floating Cashout Button */}
+            <AnimatePresence>
+              {status === 'running' && isBetting && !hasCashedOut && (
+                <motion.div 
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 50, opacity: 0 }}
+                  className="absolute bottom-32 left-1/2 -translate-x-1/2 z-30 w-full max-w-xs px-4"
+                >
+                  <button 
+                    onClick={handleCashout}
+                    className="w-full py-8 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-3xl rounded-[2rem] transition-all shadow-[0_0_40px_rgba(16,185,129,0.5)] uppercase italic tracking-tighter border-4 border-white/20 active:scale-95"
+                  >
+                    CASHOUT
+                    <p className="text-lg font-bold opacity-90">{(Number(betAmount) * multiplier).toFixed(2)} TK</p>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           {/* History Strip */}
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/60 backdrop-blur-xl flex flex-col gap-3 border-t border-white/10">

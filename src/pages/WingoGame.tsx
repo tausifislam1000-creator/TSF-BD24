@@ -18,7 +18,7 @@ interface GameResult {
 export default function WingoGame() {
   const { user, token, refreshUser } = useAuth();
   const [timeLeft, setTimeLeft] = useState(60);
-  const [betAmount, setBetAmount] = useState('10');
+  const [betAmount, setBetAmount] = useState('1');
   const [selectedBet, setSelectedBet] = useState<BetType | null>(null);
   const [history, setHistory] = useState<GameResult[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -78,11 +78,11 @@ export default function WingoGame() {
       const resSize = result.size.toLowerCase();
       const resColor = result.color.toLowerCase();
 
-      if (bet.type === 'big' && resSize === 'big') { won = true; multiplier = 2; }
-      else if (bet.type === 'small' && resSize === 'small') { won = true; multiplier = 2; }
-      else if (bet.type === 'red' && resColor.includes('red')) { won = true; multiplier = 2; }
-      else if (bet.type === 'green' && resColor.includes('green')) { won = true; multiplier = 2; }
-      else if (bet.type === 'violet' && resColor.includes('violet')) { won = true; multiplier = 4.5; }
+      if (bet.type === 'big' && resSize === 'big') { won = true; multiplier = 1.9; }
+      else if (bet.type === 'small' && resSize === 'small') { won = true; multiplier = 1.9; }
+      else if (bet.type === 'red' && resColor.includes('red')) { won = true; multiplier = 1.9; }
+      else if (bet.type === 'green' && resColor.includes('green')) { won = true; multiplier = 1.9; }
+      else if (bet.type === 'violet' && resColor.includes('violet')) { won = true; multiplier = 1.5; }
       else if (typeof bet.type === 'number' && bet.type === result.number) { won = true; multiplier = 9; }
 
       if (won) {
@@ -160,7 +160,7 @@ export default function WingoGame() {
           </div>
           <div>
             <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">Wingo Color Trading</h1>
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Virtual TK Coins Platform</p>
+            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Real Money Gaming Platform</p>
           </div>
         </div>
         <div className="flex items-center gap-3 bg-black/40 px-6 py-3 rounded-2xl border border-white/5">
@@ -315,9 +315,9 @@ export default function WingoGame() {
                   placeholder="10"
                 />
                 <div className="absolute right-2 top-2 flex gap-1">
+                  <button onClick={() => setBetAmount('1')} className="px-3 py-1 bg-zinc-800 text-[10px] font-bold rounded-lg hover:bg-zinc-700">1</button>
                   <button onClick={() => setBetAmount('10')} className="px-3 py-1 bg-zinc-800 text-[10px] font-bold rounded-lg hover:bg-zinc-700">10</button>
                   <button onClick={() => setBetAmount('100')} className="px-3 py-1 bg-zinc-800 text-[10px] font-bold rounded-lg hover:bg-zinc-700">100</button>
-                  <button onClick={() => setBetAmount('1000')} className="px-3 py-1 bg-zinc-800 text-[10px] font-bold rounded-lg hover:bg-zinc-700">1K</button>
                 </div>
               </div>
             </div>
@@ -374,6 +374,38 @@ export default function WingoGame() {
                 <p className="text-[10px] font-bold uppercase tracking-widest">Waiting for bets...</p>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* How to Play Section */}
+      <div className="bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8 shadow-2xl">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2 bg-emerald-500/20 rounded-lg">
+            <Info className="text-emerald-400" size={20} />
+          </div>
+          <h3 className="text-xl font-black uppercase tracking-widest text-white italic">How to Play</h3>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="space-y-3 p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all group">
+            <div className="text-emerald-500 font-black text-2xl group-hover:scale-110 transition-transform">01</div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Enter Bet</h4>
+            <p className="text-zinc-500 text-xs leading-relaxed font-medium">Set your bet amount (minimum 1 TK) during the countdown second waiting for result come out.</p>
+          </div>
+          <div className="space-y-3 p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all group">
+            <div className="text-emerald-500 font-black text-2xl group-hover:scale-110 transition-transform">02</div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Multipliers</h4>
+            <p className="text-zinc-500 text-xs leading-relaxed font-medium">Number: 9x | Big/Small: 1.9x | Red/Green: 1.9x | Violet: 1.5x</p>
+          </div>
+          <div className="space-y-3 p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all group">
+            <div className="text-emerald-500 font-black text-2xl group-hover:scale-110 transition-transform">03</div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Wait for Result</h4>
+            <p className="text-zinc-500 text-xs leading-relaxed font-medium">Once the timer hits zero, the lucky number and color are revealed.</p>
+          </div>
+          <div className="space-y-3 p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-emerald-500/30 transition-all group">
+            <div className="text-emerald-500 font-black text-2xl group-hover:scale-110 transition-transform">04</div>
+            <h4 className="text-white font-black uppercase text-[10px] tracking-widest">Win</h4>
+            <p className="text-zinc-500 text-xs leading-relaxed font-medium">Your winnings (Bet × Multiplier) will be added to your wallet balance immediately.</p>
           </div>
         </div>
       </div>

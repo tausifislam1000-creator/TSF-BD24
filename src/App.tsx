@@ -11,10 +11,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import CrashGame from './pages/CrashGame';
 import CoinFlip from './pages/CoinFlip';
 import WingoGame from './pages/WingoGame';
-import AviatorGame from './pages/AviatorGame';
 import MinesGame from './pages/MinesGame';
-import ChickenGame from './pages/ChickenGame';
 import ProfilePage from './pages/ProfilePage';
+import SupportPage from './pages/SupportPage';
 import TournamentsPage from './pages/TournamentsPage';
 import TournamentDetailsPage from './pages/TournamentDetailsPage';
 
@@ -40,10 +39,9 @@ function AppRoutes() {
           <Route path="/games/crash" element={<CrashGame />} />
           <Route path="/games/coinflip" element={<CoinFlip />} />
           <Route path="/games/wingo" element={<WingoGame />} />
-          <Route path="/games/aviator" element={<AviatorGame />} />
           <Route path="/games/mines" element={<MinesGame />} />
-          <Route path="/games/chicken" element={<ChickenGame />} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/support" element={<SupportPage />} />
           <Route path="/tournaments" element={<TournamentsPage />} />
           <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
         </Routes>
