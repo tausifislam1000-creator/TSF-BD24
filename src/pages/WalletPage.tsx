@@ -27,36 +27,40 @@ export default function WalletPage() {
         body: JSON.stringify({ method, senderNumber, transactionId, amount: Number(amount) })
       });
 
-      // Mirror to Formspree
+      let data;
       try {
-        fetch('https://formspree.io/f/xaqdknje', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form_type: 'Deposit Request',
-            user_email: user?.email,
-            method,
-            senderNumber,
-            transactionId,
-            amount: Number(amount),
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (fsErr) {
-        console.error('Formspree mirror failed', fsErr);
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response. Please try again.');
       }
 
-      const data = await res.json();
       if (res.ok) {
+        // Mirror to Formspree (decoupled)
+        setTimeout(() => {
+          fetch('https://formspree.io/f/xaqdknje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form_type: 'Deposit Request',
+              user_email: user?.email,
+              method,
+              senderNumber,
+              transactionId,
+              amount: Number(amount),
+              timestamp: new Date().toISOString()
+            })
+          }).catch(err => console.error('Formspree mirror failed', err));
+        }, 0);
+
         setMessage({ type: 'success', text: 'Deposit request submitted! Waiting for admin approval.' });
         setAmount('');
         setSenderNumber('');
         setTransactionId('');
       } else {
-        setMessage({ type: 'error', text: data.error });
+        setMessage({ type: 'error', text: data.error || 'Deposit failed' });
       }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Something went wrong' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message || 'Something went wrong. Please check your connection.' });
     } finally {
       setLoading(false);
     }
@@ -75,35 +79,39 @@ export default function WalletPage() {
         body: JSON.stringify({ method, withdrawNumber, amount: Number(amount) })
       });
 
-      // Mirror to Formspree
+      let data;
       try {
-        fetch('https://formspree.io/f/xaqdknje', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form_type: 'Withdrawal Request',
-            user_email: user?.email,
-            method,
-            withdrawNumber,
-            amount: Number(amount),
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (fsErr) {
-        console.error('Formspree mirror failed', fsErr);
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response. Please try again.');
       }
 
-      const data = await res.json();
       if (res.ok) {
+        // Mirror to Formspree (decoupled)
+        setTimeout(() => {
+          fetch('https://formspree.io/f/xaqdknje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form_type: 'Withdrawal Request',
+              user_email: user?.email,
+              method,
+              withdrawNumber,
+              amount: Number(amount),
+              timestamp: new Date().toISOString()
+            })
+          }).catch(err => console.error('Formspree mirror failed', err));
+        }, 0);
+
         setMessage({ type: 'success', text: 'Withdrawal request sent to admin.' });
         setAmount('');
         setWithdrawNumber('');
         refreshUser();
       } else {
-        setMessage({ type: 'error', text: data.error });
+        setMessage({ type: 'error', text: data.error || 'Withdrawal failed' });
       }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Something went wrong' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message || 'Something went wrong. Please check your connection.' });
     } finally {
       setLoading(false);
     }
@@ -123,8 +131,8 @@ export default function WalletPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to reset balance' });
       }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Something went wrong' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message || 'Something went wrong. Please check your connection.' });
     } finally {
       setLoading(false);
     }

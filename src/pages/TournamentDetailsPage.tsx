@@ -90,36 +90,40 @@ export default function TournamentDetailsPage() {
         body: JSON.stringify({ in_game_name, in_game_id })
       });
 
-      // Mirror to Formspree
+      let data;
       try {
-        fetch('https://formspree.io/f/xaqdknje', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form_type: 'Tournament Registration',
-            tournament_id: id,
-            tournament_title: tournament?.title,
-            user_email: user?.email,
-            in_game_name,
-            in_game_id,
-            players: players,
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (fsErr) {
-        console.error('Formspree mirror failed', fsErr);
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response. Please try again.');
       }
 
-      const data = await res.json();
       if (res.ok) {
+        // Mirror to Formspree (decoupled)
+        setTimeout(() => {
+          fetch('https://formspree.io/f/xaqdknje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form_type: 'Tournament Registration',
+              tournament_id: id,
+              tournament_title: tournament?.title,
+              user_email: user?.email,
+              in_game_name,
+              in_game_id,
+              players: players,
+              timestamp: new Date().toISOString()
+            })
+          }).catch(err => console.error('Formspree mirror failed', err));
+        }, 0);
+
         setMessage({ type: 'success', text: 'Registered successfully!' });
         await refreshUser();
         fetchTournament();
       } else {
-        setMessage({ type: 'error', text: data.error });
+        setMessage({ type: 'error', text: data.error || 'Registration failed' });
       }
-    } catch (e) {
-      setMessage({ type: 'error', text: 'Registration failed' });
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e.message || 'Registration failed. Please check your connection.' });
     } finally {
       setRegistering(false);
     }

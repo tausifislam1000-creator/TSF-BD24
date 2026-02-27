@@ -118,6 +118,15 @@ const io = new Server(httpServer, {
 
 app.use(express.json());
 
+app.get("/api/health", (req, res) => {
+  try {
+    const userCount = db.prepare("SELECT COUNT(*) as count FROM users").get();
+    res.json({ status: "ok", database: "connected", users: userCount });
+  } catch (e: any) {
+    res.status(500).json({ status: "error", database: "disconnected", error: e.message });
+  }
+});
+
 const JWT_SECRET = process.env.JWT_SECRET || "tsf-bd24-secret-key-2024";
 
 // Auth Middleware

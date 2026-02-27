@@ -56,33 +56,37 @@ export default function SignupPage() {
         })
       });
 
-      // Mirror to Formspree
+      let data;
       try {
-        fetch('https://formspree.io/f/xaqdknje', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            form_type: 'Signup',
-            email: formData.email,
-            username: formData.username,
-            full_name: formData.fullName,
-            phone: formData.phone,
-            timestamp: new Date().toISOString()
-          })
-        });
-      } catch (fsErr) {
-        console.error('Formspree mirror failed', fsErr);
+        data = await res.json();
+      } catch (e) {
+        throw new Error('Server returned an invalid response. Please try again.');
       }
 
-      const data = await res.json();
       if (res.ok) {
+        // Mirror to Formspree (decoupled)
+        setTimeout(() => {
+          fetch('https://formspree.io/f/xaqdknje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              form_type: 'Signup',
+              email: formData.email,
+              username: formData.username,
+              full_name: formData.fullName,
+              phone: formData.phone,
+              timestamp: new Date().toISOString()
+            })
+          }).catch(err => console.error('Formspree mirror failed', err));
+        }, 0);
+
         login(data.token, data.user);
         navigate('/');
       } else {
-        setError(data.error);
+        setError(data.error || 'Registration failed');
       }
-    } catch (e) {
-      setError('Something went wrong');
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong. Please check your connection.');
     } finally {
       setLoading(false);
     }

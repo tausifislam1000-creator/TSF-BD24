@@ -44,8 +44,8 @@ export default function LoginPage() {
       } else {
         setError(data.error);
       }
-    } catch (e) {
-      setError('Something went wrong');
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong. Please check your connection.');
     } finally {
       setLoading(false);
     }

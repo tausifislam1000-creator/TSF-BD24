@@ -26,7 +26,8 @@ export default function SupportPage() {
       } else {
         setStatus('error');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Support form error:', error);
       setStatus('error');
     }
   };
